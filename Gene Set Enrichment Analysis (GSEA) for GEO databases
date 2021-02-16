@@ -1,0 +1,89 @@
+# Gene Set Enrichment Analysis (GSEA) for GEO databases
+
+##Open libraries
+library("GSEABase")
+library(fgsea)
+library('org.Hs.eg.db')
+library(janitor)
+library(xlsx)
+
+## Data GSE123574
+df <- read.table(file = 'GSE123574.txt', sep = '\t', header = TRUE)
+
+## processing genes symbols
+df1 <- subset(df, df$Gene.symbol != "")
+symbols <- as.character(df1$Gene.symbol)
+
+## use mapIds method to obtain Entrez IDs
+entrezid <- mapIds(org.Hs.eg.db, symbols, 'ENTREZID', 'SYMBOL')
+df1$EID <- entrezid
+gseaDat <- subset(df1, !is.na(df1$EID))
+
+## rank our database
+ranks <- gseaDat$logFC
+names(ranks) <- gseaDat$EID
+head(ranks)
+
+## reactomes hallmarks, pathways preparations
+HHgmt.file <- system.file("extdata", "h.all.v7.2.entrez.gmt", package="fgsea")
+pathways <- gmtPathways(HHgmt.file)
+str(head(pathways))
+
+## fgsea
+fgseaRes <- fgsea(pathways, ranks, minSize=15, maxSize=500, nperm=1000)
+save(fgseaRes, file="fgseaRes.RData")
+
+
+## Data GSE63229
+df <- read.table(file = 'GSE63229.top.tableMEK.tsv', sep = '\t', header = TRUE)
+
+## processing genes symbols
+df1 <- subset(df, df$Gene.symbol != "")
+symbols <- as.character(df1$Gene.symbol)
+
+## use mapIds method to obtain Entrez IDs
+entrezid <- mapIds(org.Hs.eg.db, symbols, 'ENTREZID', 'SYMBOL')
+df1$EID <- entrezid
+gseaDat <- subset(df1, !is.na(df1$EID))
+
+## rank our database
+ranks <- gseaDat$logFC
+names(ranks) <- gseaDat$EID
+head(ranks)
+
+## reactomes hallmarks, pathways preparations
+HHgmt.file <- system.file("extdata", "h.all.v7.2.entrez.gmt", package="fgsea")
+pathways <- gmtPathways(HHgmt.file)
+str(head(pathways))
+
+## fgsea
+fgseaRes <- fgsea(pathways, ranks, minSize=15, maxSize=500, nperm=1000)
+save(fgseaRes, file="fgseaRes.RData")
+
+## export results
+datos2 <- data.frame(fgseaRes[,c(1,2,3,4,5,6,7)])
+write.xlsx(datos2, file="GSEA results.xlsx", sheetName = "Sheet1", col.names = TRUE, row.names = FALSE)  
+
+## plots examples
+topPathwaysDown <- fgseaRes[fgseaRes$pval < 0.05,][NES < 0][head(order(NES), n=10), pathway]
+plotGseaTable(pathways[topPathwaysDown], ranks, fgseaRes, gseaParam=0.5)
+plotEnrichment(pathways[["HALLMARK_INFLAMMATORY_RESPONSE"]], ranks) + labs(title="INFLAMMATORY RESPONSE")
+plotEnrichment(pathways[["HALLMARK_ALLOGRAFT_REJECTION"]], ranks) + labs(title="ALLOGRAFT REJECTION")
+plotEnrichment(pathways[["HALLMARK_TNFA_SIGNALING_VIA_NFKB"]], ranks) + labs(title="TNFA SIGNALING VIA NFKB")
+plotEnrichment(pathways[["HALLMARK_IL6_JAK_STAT3_SIGNALING"]], ranks) + labs(title="IL6/JAK/STAT3 SIGNALING")
+plotEnrichment(pathways[["HALLMARK_INTERFERON_GAMMA_RESPONSE"]], ranks) + labs(title="INTERFERON GAMMA RESPONSE")
+
+
+## export results
+datos2 <- data.frame(fgseaRes[,c(1,2,3,4,5,6,7)])
+write.xlsx(datos2, file="GSEA results.xlsx", sheetName = "Sheet1", col.names = TRUE, row.names = FALSE)  
+
+## plots examples
+topPathwaysDown <- fgseaRes[fgseaRes$pval < 0.05,][NES < 0][head(order(NES), n=10), pathway]
+plotGseaTable(pathways[topPathwaysDown], ranks, fgseaRes, gseaParam=0.5)
+plotEnrichment(pathways[["HALLMARK_INFLAMMATORY_RESPONSE"]], ranks) + labs(title="INFLAMMATORY RESPONSE")
+plotEnrichment(pathways[["HALLMARK_ALLOGRAFT_REJECTION"]], ranks) + labs(title="ALLOGRAFT REJECTION")
+plotEnrichment(pathways[["HALLMARK_TNFA_SIGNALING_VIA_NFKB"]], ranks) + labs(title="TNFA SIGNALING VIA NFKB")
+plotEnrichment(pathways[["HALLMARK_IL6_JAK_STAT3_SIGNALING"]], ranks) + labs(title="IL6/JAK/STAT3 SIGNALING")
+plotEnrichment(pathways[["HALLMARK_INTERFERON_GAMMA_RESPONSE"]], ranks) + labs(title="INTERFERON GAMMA RESPONSE")
+
